@@ -39,7 +39,7 @@ export function normalizeString(text: string) {
 const lowercaseWords = ["del", "dal", "con", "della", "dello"];
 
 export function normalizeName(name: string) {
-  return name.toLowerCase().replace(/\b\w+/g, (x) => {
+  return name.toLowerCase().replace(/\b\w+/g, x => {
     if (x.length <= 2 || lowercaseWords.includes(x)) return x;
     return x.substr(0, 1).toUpperCase() + x.substr(1);
   });
@@ -49,7 +49,7 @@ export function debugHTML($: CheerioAPI, node: Cheerio<Node>) {
   console.log(
     node
       .toArray()
-      .map((n) => $.html(n))
+      .map(n => $.html(n))
       .join("\n"),
   );
 }

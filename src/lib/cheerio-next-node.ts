@@ -31,7 +31,7 @@ export default function initNextNodePlugin($: CheerioAPI) {
       return (el, i) => (match as FilterFunction<T>).call(el, i, el);
     }
     if (isCheerio<T>(match)) {
-      return (el) => Array.prototype.includes.call(match, el);
+      return el => Array.prototype.includes.call(match, el);
     }
     return function (el) {
       return match === el;
@@ -55,7 +55,7 @@ export default function initNextNodePlugin($: CheerioAPI) {
   ): Cheerio<Node> {
     const matched: Node[] = [];
 
-    domEach(this, (elem) => {
+    domEach(this, elem => {
       for (let prev; (prev = elem.prev); elem = prev) {
         if (!matched.includes(prev)) matched.splice(0, 0, prev);
       }
@@ -69,7 +69,7 @@ export default function initNextNodePlugin($: CheerioAPI) {
   ): Cheerio<Node> {
     const matched: Node[] = [];
 
-    domEach(this, (elem) => {
+    domEach(this, elem => {
       for (let next; (next = elem.next); elem = next) {
         if (!matched.includes(next)) matched.push(next);
       }
@@ -95,7 +95,7 @@ export default function initNextNodePlugin($: CheerioAPI) {
         ? getFilterFn(selector)
         : null;
 
-    domEach(this, (elem) => {
+    domEach(this, elem => {
       for (let next; (next = elem.next); elem = next) {
         if (selectFn?.(next, matched.length)) break;
         matched.push(next);

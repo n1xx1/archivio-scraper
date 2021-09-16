@@ -66,4 +66,4 @@ async function main() {
   // process.stdout.write(outText);
 }
 
-main().catch((e) => console.log(e));
+main().catch(e => console.log(e));

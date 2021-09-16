@@ -46,7 +46,7 @@ export function processActionBlock(
   const outputElement: GenericActionBlock = {
     name: normalizeName(name),
     action: actionCost,
-    traits: traits.toArray().map((t) => $(t).text()),
+    traits: traits.toArray().map(t => $(t).text()),
     text: "",
     entries: {},
   };
