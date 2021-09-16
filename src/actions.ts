@@ -1,10 +1,9 @@
 import { Cheerio, CheerioAPI } from "cheerio";
-import { Element } from "domhandler";
+import { is as selectIs } from "cheerio-select";
+import { Element, Node, isTag, isText } from "domhandler";
 import { normalizeName, requestPage, toMarkdown } from "./lib/scraper";
-import { PathfinderSource, replaceLinks } from "./links";
-
-export type PathfinderAction = "free" | "1" | "2" | "3" | "reaction";
-
+import { parseActionImage, PathfinderAction, replaceLinks } from "./links";
+import { PathfinderSource } from "./sources";
 export interface PathfinderBasicAction
   extends Omit<GenericActionBlock, "entries"> {
   type: "basic-action";
@@ -27,6 +26,50 @@ interface GenericActionBlock {
   entries: Record<string, string>;
 }
 
+export function isFollowedBy(node: Node, filter: string): Element | null {
+  while (
+    node.next &&
+    (node.type === "comment" ||
+      (isText(node.next) && node.next.nodeValue.trim() === ""))
+  ) {
+    node = node.next;
+  }
+  if (node.next && isTag(node.next) && selectIs(node.next, filter)) {
+    return node.next;
+  }
+  return null;
+}
+
+export function parseLines(
+  $: CheerioAPI,
+  line: Cheerio<Node>,
+  context?: string,
+): Record<string, string> {
+  const output: Record<string, string> = {};
+  while (line.length > 0) {
+    let name = line.text().trim();
+
+    while (true) {
+      const nextEl = isFollowedBy(line[0], "b, strong");
+      if (!nextEl) break;
+      line = $(nextEl);
+      name += " " + line.text().trim();
+    }
+
+    const contents = line.nextNodeUntil("strong, b");
+    let lineText = contents.clone().wrapAll("<div />").parent().html()!;
+    lineText = toMarkdown(lineText.trim());
+    lineText = replaceLinks(lineText, context);
+    if (lineText.endsWith(";"))
+      lineText = lineText.substr(0, lineText.length - 1);
+
+    output[name] = lineText.trim();
+
+    line = contents.last().next();
+  }
+  return output;
+}
+
 export function processActionBlock(
   $: CheerioAPI,
   $actionTitle: Cheerio<Element>,
@@ -46,7 +89,7 @@ export function processActionBlock(
   const outputElement: GenericActionBlock = {
     name: normalizeName(name),
     action: actionCost,
-    traits: traits.toArray().map(t => $(t).text()),
+    traits: traits.toArray().map(t => $(t).text().trim()),
     text: "",
     entries: {},
   };
@@ -57,18 +100,11 @@ export function processActionBlock(
   if (firstLine.length === 0 && $action.find("hr").length > 1) {
     firstLine = $action.find("hr + p > strong, hr + p > b").eq(0);
   }
-  let line = firstLine;
-  while (line.length > 0) {
-    const name = line.text().trim();
-    const contents = line.nextNodeUntil("strong");
-    let lineText = contents.clone().wrapAll("<div />").parent().html()!;
-    lineText = toMarkdown(lineText.trim());
-    lineText = replaceLinks(lineText, "/giocare/modalita-incontro/");
-
-    outputElement.entries[name] = lineText;
-
-    line = contents.last().next();
-  }
+  outputElement.entries = parseLines(
+    $,
+    firstLine,
+    "/giocare/modalita-incontro/",
+  );
 
   // description
   const descriptionBlock = (
@@ -163,14 +199,4 @@ export async function generateActions(): Promise<PathfinderAnyAction[]> {
   }
 
   return output;
-}
-
-function parseActionImage(src: string): PathfinderAction | null {
-  if (!src) return null;
-  if (src.includes("reaction")) return "reaction";
-  if (src.includes("1-azione")) return "1";
-  if (src.includes("2-azioni")) return "2";
-  if (src.includes("3-azioni")) return "3";
-  if (src.includes("free")) return "free";
-  throw new Error(`unknown image: ${src}`);
 }

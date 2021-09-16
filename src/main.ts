@@ -1,25 +1,8 @@
-import {
-  generateActions,
-  PathfinderAction,
-  PathfinderAnyAction,
-} from "./actions";
+import { generateActions, PathfinderAnyAction } from "./actions";
 import { generateConditions } from "./conditions";
-import { getAllSpells } from "./spells";
+import { PathfinderAction } from "./links";
+import { generateSpells, getAllSpells } from "./spells";
 
-function textActionCost(a: PathfinderAction) {
-  switch (a) {
-    case "1":
-      return "A";
-    case "2":
-      return "AA";
-    case "3":
-      return "AAA";
-    case "free":
-      return "F";
-    case "reaction":
-      return "R";
-  }
-}
 function textActionKind(a: PathfinderAnyAction["type"]): string {
   switch (a) {
     case "basic-action":
@@ -30,11 +13,9 @@ function textActionKind(a: PathfinderAnyAction["type"]): string {
 }
 
 async function main() {
-  const conditions = await generateConditions();
-  const actions = await generateActions();
-  const spellList = await getAllSpells();
-
-  console.log(spellList);
+  // const conditions = await generateConditions();
+  // const actions = await generateActions();
+  const spells = await generateSpells();
 
   // let outText = "";
   // for (const condition of conditions) {

@@ -1,5 +1,6 @@
 import { normalizeName, requestPage, toMarkdown } from "./lib/scraper";
-import { PathfinderSource, replaceLinks } from "./links";
+import { replaceLinks } from "./links";
+import { PathfinderSource } from "./sources";
 
 export interface PathfinderCondition {
   type: "condition";
