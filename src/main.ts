@@ -1,7 +1,7 @@
 import { generateActions, PathfinderAnyAction } from "./actions";
 import { generateConditions } from "./conditions";
-import { PathfinderAction } from "./links";
-import { generateSpells, getAllSpells } from "./spells";
+import { generateSpells } from "./spells";
+import { generateTraits } from "./traits";
 
 function textActionKind(a: PathfinderAnyAction["type"]): string {
   switch (a) {
@@ -13,9 +13,10 @@ function textActionKind(a: PathfinderAnyAction["type"]): string {
 }
 
 async function main() {
-  // const conditions = await generateConditions();
-  // const actions = await generateActions();
+  const conditions = await generateConditions();
+  const actions = await generateActions();
   const spells = await generateSpells();
+  const traits = await generateTraits();
 
   // let outText = "";
   // for (const condition of conditions) {

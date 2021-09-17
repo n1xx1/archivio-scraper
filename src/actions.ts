@@ -1,7 +1,7 @@
 import { Cheerio, CheerioAPI } from "cheerio";
 import { is as selectIs } from "cheerio-select";
 import { Element, Node, isTag, isText } from "domhandler";
-import { normalizeName, requestPage, toMarkdown } from "./lib/scraper";
+import { capitalizeName, requestPage, toMarkdown } from "./lib/scraper";
 import { parseActionImage, PathfinderAction, replaceLinks } from "./links";
 import { PathfinderSource } from "./sources";
 export interface PathfinderBasicAction
@@ -87,7 +87,7 @@ export function processActionBlock(
   const traits = $action.find(".tratto");
 
   const outputElement: GenericActionBlock = {
-    name: normalizeName(name),
+    name: capitalizeName(name),
     action: actionCost,
     traits: traits.toArray().map(t => $(t).text().trim()),
     text: "",

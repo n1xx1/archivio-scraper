@@ -41,12 +41,13 @@ export function replaceLinks(text: string, base?: string) {
         return `[${text}](/feats/${featName})`;
       }
       case link === "/condizione/#nascosto": // TODO: ARCHIVIO ERROR
-      case link.startsWith("/condizioni"): {
+      case link.startsWith("/condizioni/#"):
+      case link.startsWith("/condizioni#"): {
         let conditionName = link.split("#")[1];
         if (conditionName === "osservata") conditionName = "osservato"; // TODO: ARCHIVIO ERROR
         if (conditionName === "nascosta") conditionName = "nascosto"; // TODO: ARCHIVIO ERROR
         if (conditionMap[conditionName] === undefined)
-          throw `unknown condition ${conditionName}`;
+          throw new Error(`unknown condition ${conditionName} (${link})`);
         return `[${text}](/conditions/${conditionName})`;
       }
       case link.startsWith("/giocare/modalita-incontro#"):
@@ -55,6 +56,7 @@ export function replaceLinks(text: string, base?: string) {
         const actionName = link.split("#")[1];
         return `[${text}](/actions/${actionName})`;
       }
+      case link.startsWith("/tratto/"):
       case link.startsWith("/tratti/"): {
         const traitName = link.substr(1).split("/")[1];
         return `[${text}](/traits/${traitName})`;
@@ -68,7 +70,8 @@ export function replaceLinks(text: string, base?: string) {
         const deityName = link.substr(1).split("/")[2];
         return `[${text}](/deity/${deityName})`;
       }
-      case link.startsWith("/creature/mostri/"): {
+      case link.startsWith("/creature/mostri/") &&
+        link !== "/creature/mostri/modelli/": {
         const monsterName = link.substr(1).split("/")[2];
         return `[${text}](/monsters/${monsterName})`;
       }
@@ -77,9 +80,19 @@ export function replaceLinks(text: string, base?: string) {
       case link === "/creature":
       case link === "/tratti":
       case link === "/ambientazione/lingue/":
-      case link.startsWith("/stirpi/"): // TODO: implement races
+      case link === "/condizioni":
+      case link === "/condizioni/":
+      case link === "/talenti/talenti-generici/":
+      case link === "/talenti/talenti-di-abilita/":
+      case link.startsWith("/creature/capacita"):
+      case link.startsWith("/archetipi"): // TODO: implement archetypes
+      case link.startsWith("/stirpi"): // TODO: implement ancestries
+      case link.startsWith("/classi"): // TODO: implement classi
       case link.startsWith("/oggetti"): // TODO: implement oggetti
       case link.startsWith("/giocare"):
+      // NOTE: absolute url; https://www.archiviodeicercatori.it/tratti/brutale/
+      case link ===
+        "https://archiviodeicercatori.it/giocare/prove-specifiche-e-prove-speciali/#tiri-per-colpire":
       case link.startsWith("/game-master/"):
       case link.startsWith("/introduzione/"):
       case link.startsWith("/pericoli"):

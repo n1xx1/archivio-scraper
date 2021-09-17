@@ -1,4 +1,4 @@
-import { normalizeName, requestPage, toMarkdown } from "./lib/scraper";
+import { capitalizeName, requestPage, toMarkdown } from "./lib/scraper";
 import { replaceLinks } from "./links";
 import { PathfinderSource } from "./sources";
 
@@ -32,7 +32,7 @@ export async function generateConditions() {
 
     output.push({
       type: "condition",
-      name: normalizeName(name),
+      name: capitalizeName(name),
       text,
       source: {
         manual: "crb",

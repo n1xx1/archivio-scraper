@@ -1,6 +1,7 @@
 import { Cheerio, CheerioAPI } from "cheerio";
-import { normalizeString, requestPage, toMarkdown } from "./lib/scraper";
-import { Element } from "domhandler";
+import { is as cheerioIs } from "cheerio-select";
+import { normalizeText, requestPage, toMarkdown } from "./lib/scraper";
+import { Element, Node } from "domhandler";
 import { removeLinks, replaceLinks } from "./links";
 import { parseLines } from "./actions";
 import { parseSource, PathfinderSource } from "./sources";
@@ -25,8 +26,8 @@ export async function getAllSpells(): Promise<PathfinderShortSpell[]> {
     for (const entry of entries) {
       const $entry = $(entry);
       const link = $entry.find(".column-1>a");
-      const shortText = normalizeString($entry.find(".column-4").text().trim());
-      const name = link.text();
+      const shortText = normalizeText($entry.find(".column-4").text());
+      const name = normalizeText(link.text());
       const id = link.attr("href")!.substr(1).split("/")[1];
 
       spells.set(name, { id, name, shortText });
@@ -48,17 +49,18 @@ export function processActionBlock(
   $: CheerioAPI,
   $action: Cheerio<Element>,
 ): SpellActionBlock {
-  $action.find(">* hr").unwrap();
+  const [firstBlock, descriptionBlock, heightenedBlock] =
+    splitParagraphGroups($action);
 
   // traits
-  const traits = $action.find(".tratto");
+  const traits = firstBlock.find(".tratto");
 
-  const sourceText = $action.find("em").eq(0).text();
+  const sourceText = firstBlock.find("em").eq(0).text();
 
   const outputElement: SpellActionBlock = {
     traits: traits.toArray().map(t => $(t).text().trim()),
     text: "",
-    heightenedEntries: null!,
+    heightenedEntries: {},
     entries: null!,
     source: parseSource(sourceText),
   };
@@ -67,28 +69,31 @@ export function processActionBlock(
   outputElement.entries = parseLines($, firstLine);
 
   // description
-  const descriptionBlock = $action.find(">p:first-child, >hr+p").eq(1);
-  let text = $([
-    ...descriptionBlock,
-    ...descriptionBlock.nextUntil((_i, e) => !$(e).is("p")),
-  ])
-    .clone()
-    .wrapAll("<div>")
-    .parent()
-    .html()!;
+  let text = descriptionBlock.clone().wrapAll("<div>").parent().html()!;
   text = toMarkdown(text.trim());
   text = replaceLinks(text);
   outputElement.text = text;
 
   // heightenedText
-  const firstHeightenedLine = $action
-    .find(">p:first-child, >hr+p")
-    .eq(2)
-    .find("strong, b")
-    .eq(0);
-  outputElement.heightenedEntries = parseLines($, firstHeightenedLine);
+  if (heightenedBlock) {
+    const firstHeightenedLine = heightenedBlock.find("strong, b").eq(0);
+    outputElement.heightenedEntries = parseLines($, firstHeightenedLine);
+  }
 
   return outputElement;
+}
+
+export function getParagraphGroup(paragraph: Cheerio<Element>) {
+  return paragraph._make([paragraph[0], ...paragraph.nextUntil(":not(p,ul)")]);
+}
+
+export function splitParagraphGroups(statBlock: Cheerio<Node>) {
+  statBlock.find(">* hr").unwrap();
+
+  return statBlock
+    .find(">p:first-child, >hr+p")
+    .toArray()
+    .map(el => getParagraphGroup(statBlock._make(el)));
 }
 
 export type PathfinderTradition = "arcane" | "primal" | "divine" | "occult";
@@ -128,15 +133,19 @@ export async function generateSpells(): Promise<PathfinderSpell[]> {
       const url = `https://www.archiviodeicercatori.it/incantesimi/${base.id}/`;
       const $ = await requestPage(url);
 
-      const spellBlock = $(".fusion-text.fusion-text-2");
-      const title = normalizeString(
+      // TODO: ARCHIVIO ERROR https://www.archiviodeicercatori.it/incantesimi/legame-con-lo-spirito/
+      const spellBlock = $(".fusion-text>p>b,.fusion-text>p>strong")
+        .eq(0)
+        .parent()
+        .parent();
+      const title = normalizeText(
         spellBlock.find(">p>b, >p>strong").eq(0).text(),
       );
 
       const titleMatch = title.match(
         /^(.+?)\s+(INCANTESIMO|TRUCCHETTO)\s+(\d+)\s*$/,
       );
-      if (!titleMatch) throw new Error(`can't parse title ${title}`);
+      if (!titleMatch) throw new Error(`can't parse title "${title}"`);
       const [, , kind, level] = titleMatch;
 
       const nethysUrl = $("strong:contains(Fonte), b:contains(Fonte)")
@@ -219,7 +228,6 @@ export async function generateSpells(): Promise<PathfinderSpell[]> {
         console.log(data.entries);
         throw new Error(`unknown info entry: ${name} - ${text}`);
       }
-      console.log(newEl);
       output.push(newEl);
     } catch (ex) {
       console.log(`parsing spell: ${base.name} (${base.id})`);

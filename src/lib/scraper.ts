@@ -19,7 +19,7 @@ const turndownService = new TurndownService();
 
 export function toMarkdown(html: string) {
   let markdown = turndownService.turndown(html);
-  markdown = normalizeString(markdown);
+  markdown = normalizeText(markdown);
   markdown = markdown.replace(/<!--[\s\S]*?-->/g, "");
   markdown = markdown.replace(
     '"stordito per 1 minuto ',
@@ -28,17 +28,18 @@ export function toMarkdown(html: string) {
   return markdown;
 }
 
-export function normalizeString(text: string) {
+export function normalizeText(text: string) {
   text = text.replace(/’/g, "'");
   text = text.replace(/“/g, '"');
   text = text.replace(/\u00A0/g, " ");
+  text = text.trim();
   return text;
 }
 
 // TODO: trovare tutte le parole
 const lowercaseWords = ["del", "dal", "con", "della", "dello"];
 
-export function normalizeName(name: string) {
+export function capitalizeName(name: string) {
   return name.toLowerCase().replace(/\b\w+/g, x => {
     if (x.length <= 2 || lowercaseWords.includes(x)) return x;
     return x.substr(0, 1).toUpperCase() + x.substr(1);
